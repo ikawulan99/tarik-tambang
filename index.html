@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latihan Firebase</title>
+<style>
+body{font-family:system-ui,Arial,sans-serif;max-width:560px;margin:0 auto;padding:16px;background:#f3f6fb}
+button{font:inherit;padding:12px;border:0;border-radius:8px;color:#fff;font-weight:600;width:100%;margin:4px 0;cursor:pointer}
+#bA{background:#2563eb}#bB{background:#dc2626}#bR{background:#6b7280}
+.sc{display:flex;justify-content:space-between;font-size:20px;margin:10px 0}
+.track{position:relative;height:56px;background:linear-gradient(90deg,#dbeafe 50%,#fee2e2 50%);border-radius:10px}
+#flag{position:absolute;top:10px;font-size:30px;transform:translateX(-50%);transition:left .6s;left:50%}
+#st{padding:8px;border-radius:8px;background:#fef3c7}
+#st.ok{background:#dcfce7}#st.bad{background:#fee2e2}
+</style>
+</head>
+<body>
+<h2>🪢 Latihan Firebase: Tarik Tambang Mini</h2>
+<div id="st">Menghubungkan ke Firebase...</div>
+<div class="sc"><span>Tim A: <b id="a">0</b></span><span>Tim B: <b id="b">0</b></span></div>
+<div class="track"><div id="flag">🚩</div></div>
+<button id="bA">Tarik Tim A</button>
+<button id="bB">Tarik Tim B</button>
+<button id="bR">Reset</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+import { getDatabase, ref, onValue, runTransaction, set } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-database.js";
+
+// ===== TEMPEL NILAI DARI firebaseConfig MILIK IBU (ganti tulisan ISI_...) =====
+const firebaseConfig = {
+  apiKey: "AIzaSyCZWfSk6aeA_u5QSAu34Mm_ltRd3yaH7X4",
+  authDomain: "tarik-tambang-transgeo.firebaseapp.com",
+  projectId: "tarik-tambang-transgeo",
+  appId: "1:257259079509:web:07125260a60d8f630a91dc",
+  databaseURL: "https://tarik-tambang-transgeo-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+// =============================================================================
+
+const $ = id => document.getElementById(id);
+const db = getDatabase(initializeApp(firebaseConfig));
+
+// status koneksi
+onValue(ref(db, ".info/connected"), s => {
+  $("st").className = s.val() ? "ok" : "";
+  $("st").textContent = s.val() ? "✅ Terhubung ke Firebase" : "Menghubungkan ke Firebase...";
+});
+
+// dengarkan perubahan skor secara real-time
+onValue(ref(db, "latihan/skor"), s => {
+  const v = s.val() || { A: 0, B: 0 };
+  $("a").textContent = v.A || 0; $("b").textContent = v.B || 0;
+  $("flag").style.left = (50 - 40 * Math.tanh(((v.A || 0) - (v.B || 0)) / 6)) + "%";
+}, e => { $("st").className = "bad"; $("st").textContent = "❌ " + e.message; });
+
+// tambah skor (aman walau banyak yang klik bersamaan)
+const tarik = t => runTransaction(ref(db, "latihan/skor/" + t), n => (n || 0) + 1);
+$("bA").onclick = () => tarik("A");
+$("bB").onclick = () => tarik("B");
+$("bR").onclick = () => set(ref(db, "latihan/skor"), { A: 0, B: 0 });
+</script>
+</body>
+</html>
